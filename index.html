@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Smart City Optimization System</title>
+<style>
+:root{--bg:#eef2f4;--panel:#fff;--ink:#14262e;--mute:#5b6f78;--line:#cfd9de;--teal:#0f6b6b;--amber:#d98e04;--chip:#e3eef0}
+@media (prefers-color-scheme:dark){:root{--bg:#0f1a1f;--panel:#17262d;--ink:#e6eef1;--mute:#93a8b1;--line:#2a3d46;--teal:#4cc2c2;--amber:#f0b429;--chip:#1f3640}}
+*{box-sizing:border-box}
+html{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 "Segoe UI",system-ui,-apple-system,Roboto,sans-serif}
+header{padding:28px 20px 8px;max-width:960px;margin:0 auto}
+h1{margin:0 0 4px;font-size:clamp(1.5rem,4vw,2.2rem);letter-spacing:-.01em}
+header p{margin:0;color:var(--mute);max-width:62ch}
+nav{display:flex;gap:6px;max-width:960px;margin:16px auto 0;padding:0 20px;flex-wrap:wrap}
+nav button{border:1px solid var(--line);background:var(--panel);color:var(--ink);padding:9px 14px;border-radius:8px;font:inherit;cursor:pointer}
+nav button[aria-selected=true]{background:var(--teal);color:#fff;border-color:var(--teal)}
+:focus-visible{outline:3px solid var(--amber);outline-offset:2px}
+main{max-width:960px;margin:12px auto 40px;padding:0 20px}
+section{display:none;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:20px}
+section.on{display:block}
+h2{margin:0 0 4px;font-size:1.2rem}
+.sub{color:var(--mute);margin:0 0 16px;font-size:.92rem}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+@media(max-width:720px){.grid{grid-template-columns:1fr}}
+label{display:block;font-weight:600;font-size:.9rem;margin:10px 0 4px}
+select,input,textarea{width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);font:inherit}
+textarea{min-height:130px;font-family:Consolas,monospace;font-size:.9rem}
+button.run{margin-top:14px;background:var(--amber);color:#1b1300;border:0;padding:10px 18px;border-radius:8px;font:inherit;font-weight:700;cursor:pointer}
+.out{margin-top:16px;padding:12px 14px;background:var(--chip);border-radius:8px}
+.big{font-size:1.6rem;font-weight:700;color:var(--teal)}
+svg{width:100%;height:auto;max-height:340px;background:var(--bg);border-radius:8px;border:1px solid var(--line)}
+.bar{position:relative;height:22px;margin:6px 0;background:var(--bg);border-radius:4px}
+.bar i{position:absolute;top:0;height:100%;border-radius:4px;background:var(--line);font-style:normal;font-size:.75rem;padding-left:6px;color:var(--ink);overflow:hidden}
+.bar i.pick{background:var(--teal);color:#fff}
+.err{color:#c0392b;font-weight:600}
+footer{max-width:960px;margin:0 auto 30px;padding:0 20px;color:var(--mute);font-size:.85rem}
+</style>
+</head>
+<body>
+<header>
+<h1>Smart City Resource, Transport and Emergency Optimization</h1>
+<p>Three algorithms from the DAA syllabus working on city problems. Change the inputs and run them.</p>
+</header>
+<nav role="tablist">
+<button role="tab" aria-selected="true" data-t="t1">Emergency routing</button>
+<button role="tab" aria-selected="false" data-t="t2">Budget allocation</button>
+<button role="tab" aria-selected="false" data-t="t3">Vehicle dispatch</button>
+</nav>
+<main>
+<section id="t1" class="on">
+<h2>Emergency routing (Dijkstra)</h2>
+<p class="sub">Finds the shortest travel time between two places. Roads work in both directions.</p>
+<div class="grid">
+<div>
+<label for="edges">Roads (from, to, minutes)</label>
+<textarea id="edges">Hospital,Junction_A,4
+Hospital,Junction_B,2
+Junction_A,Junction_B,1
+Junction_A,Emergency_Site,5
+Junction_B,Emergency_Site,8</textarea>
+<label for="from">Start</label><select id="from"></select>
+<label for="to">Destination</label><select id="to"></select>
+<button class="run" id="r1">Find fastest route</button>
+</div>
+<div><svg id="map" viewBox="0 0 400 300" role="img" aria-label="City road map"></svg></div>
+</div>
+<div class="out" id="o1" aria-live="polite">Press the button to see the route.</div>
+</section>
+
+<section id="t2">
+<h2>Budget allocation (0/1 Knapsack DP)</h2>
+<p class="sub">Chooses the projects that give the most impact without going over the budget.</p>
+<div class="grid">
+<div>
+<label for="budget">Total budget</label><input id="budget" type="number" min="1" value="50">
+<label for="items">Projects (name, cost, impact)</label>
+<textarea id="items">Street lights,10,60
+Water supply,20,100
+Traffic signals,30,120</textarea>
+<button class="run" id="r2">Allocate budget</button>
+</div>
+<div class="out" id="o2" aria-live="polite">Press the button to see the best selection.</div>
+</div>
+</section>
+
+<section id="t3">
+<h2>Vehicle dispatch (Activity Selection, greedy)</h2>
+<p class="sub">Schedules the largest number of emergency tasks that do not overlap.</p>
+<div class="grid">
+<div>
+<label for="jobs">Tasks (start, end)</label>
+<textarea id="jobs">1,3
+2,5
+4,6
+6,7
+5,9
+8,9</textarea>
+<button class="run" id="r3">Schedule tasks</button>
+</div>
+<div class="out" id="o3" aria-live="polite">Press the button to see the schedule.</div>
+</div>
+</section>
+</main>
+<footer>Algorithms: Dijkstra (Unit IV), 0/1 Knapsack dynamic programming (Unit III), Activity Selection (Unit II).</footer>
+
+<script>
+const $ = id => document.getElementById(id);
+const rows = t => t.split("\n").map(l => l.split(",").map(s => s.trim())).filter(r => r.length > 1 && r[0] !== "");
+
+document.querySelectorAll("nav button").forEach(b => b.onclick = () => {
+  document.querySelectorAll("nav button").forEach(x => x.setAttribute("aria-selected", x === b));
+  document.querySelectorAll("section").forEach(s => s.classList.toggle("on", s.id === b.dataset.t));
+});
+
+/* Unit 4: Dijkstra */
+function buildGraph(text){
+  const g = {};
+  rows(text).forEach(([a, b, w]) => {
+    const n = Number(w);
+    if (!b || isNaN(n) || n < 0) return;
+    (g[a] = g[a] || []).push({t: b, w: n});
+    (g[b] = g[b] || []).push({t: a, w: n});
+  });
+  return g;
+}
+function dijkstra(g, s, e){
+  const dist = {}, prev = {}, done = new Set();
+  Object.keys(g).forEach(k => dist[k] = Infinity);
+  dist[s] = 0;
+  while (true){
+    let u = null;
+    for (const k in dist) if (!done.has(k) && (u === null || dist[k] < dist[u])) u = k;
+    if (u === null || dist[u] === Infinity) break;
+    if (u === e) break;
+    done.add(u);
+    for (const {t, w} of g[u]) if (dist[u] + w < dist[t]){ dist[t] = dist[u] + w; prev[t] = u; }
+  }
+  if (dist[e] === Infinity) return null;
+  const path = [e];
+  while (path[0] !== s) path.unshift(prev[path[0]]);
+  return {time: dist[e], path};
+}
+function fillSelects(){
+  const g = buildGraph($("edges").value), names = Object.keys(g);
+  [["from", 0], ["to", names.length - 1]].forEach(([id, def]) => {
+    const old = $(id).value;
+    $(id).innerHTML = names.map(n => `<option>${n}</option>`).join("");
+    $(id).value = names.includes(old) ? old : names[Math.max(def, 0)];
+  });
+  return g;
+}
+function drawMap(g, path){
+  const names = Object.keys(g), n = names.length, pos = {};
+  names.forEach((k, i) => { const a = 2 * Math.PI * i / n - Math.PI / 2; pos[k] = [200 + 130 * Math.cos(a), 150 + 105 * Math.sin(a)]; });
+  const onPath = (a, b) => path && path.some((p, i) => i < path.length - 1 && ((p === a && path[i+1] === b) || (p === b && path[i+1] === a)));
+  const seen = new Set();
+  let svg = "";
+  names.forEach(a => g[a].forEach(({t, w}) => {
+    const key = [a, t].sort().join("|");
+    if (seen.has(key)) return; seen.add(key);
+    const hit = onPath(a, t), [x1, y1] = pos[a], [x2, y2] = pos[t];
+    svg += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${hit ? "var(--amber)" : "var(--line)"}" stroke-width="${hit ? 5 : 2}"/>`;
+    svg += `<text x="${(x1+x2)/2}" y="${(y1+y2)/2 - 4}" font-size="12" text-anchor="middle" fill="var(--mute)">${w}</text>`;
+  }));
+  names.forEach(k => {
+    const hit = path && path.includes(k), [x, y] = pos[k];
+    svg += `<circle cx="${x}" cy="${y}" r="9" fill="${hit ? "var(--amber)" : "var(--teal)"}"/>`;
+    svg += `<text x="${x}" y="${y + 24}" font-size="11" text-anchor="middle" fill="var(--ink)">${k.replace(/_/g, " ")}</text>`;
+  });
+  $("map").innerHTML = svg;
+}
+function runRoute(){
+  const g = fillSelects(), s = $("from").value, e = $("to").value;
+  if (!s || !e){ $("o1").innerHTML = '<span class="err">Add at least one road in the format: from, to, minutes.</span>'; drawMap(g, null); return; }
+  const r = dijkstra(g, s, e);
+  drawMap(g, r && r.path);
+  $("o1").innerHTML = r
+    ? `Shortest travel time <div class="big">${r.time} mins</div>Route: ${r.path.map(p => p.replace(/_/g, " ")).join(" → ")}`
+    : '<span class="err">No road connects these two places.</span>';
+}
+$("r1").onclick = runRoute;
+$("edges").oninput = () => { drawMap(fillSelects(), null); };
+
+/* Unit 3: 0/1 Knapsack */
+function allocate(budget, items){
+  const n = items.length, dp = Array.from({length: n + 1}, () => new Array(budget + 1).fill(0));
+  for (let i = 1; i <= n; i++) for (let w = 1; w <= budget; w++){
+    const c = items[i-1].cost;
+    dp[i][w] = c <= w ? Math.max(dp[i-1][w], items[i-1].impact + dp[i-1][w-c]) : dp[i-1][w];
+  }
+  const chosen = []; let w = budget;
+  for (let i = n; i > 0; i--) if (dp[i][w] !== dp[i-1][w]){ chosen.unshift(items[i-1]); w -= items[i-1].cost; }
+  return {best: dp[n][budget], chosen};
+}
+$("r2").onclick = () => {
+  const budget = parseInt($("budget").value, 10);
+  const items = rows($("items").value).map(([name, c, i]) => ({name, cost: parseInt(c, 10), impact: parseInt(i, 10)})).filter(x => x.cost > 0 && !isNaN(x.impact));
+  if (!(budget > 0) || !items.length){ $("o2").innerHTML = '<span class="err">Enter a budget and projects in the format: name, cost, impact.</span>'; return; }
+  const r = allocate(budget, items), spent = r.chosen.reduce((a, x) => a + x.cost, 0);
+  $("o2").innerHTML = `Maximum impact <div class="big">${r.best}</div>` +
+    (r.chosen.length ? `Selected: ${r.chosen.map(x => x.name).join(", ")}<br>Budget used: ${spent} of ${budget}` : "No project fits in this budget.");
+};
+
+/* Unit 2: Activity selection */
+function schedule(jobs){
+  const s = [...jobs].sort((a, b) => a.end - b.end), picked = [];
+  let last = -Infinity;
+  for (const j of s) if (j.start >= last){ picked.push(j); last = j.end; }
+  return picked;
+}
+$("r3").onclick = () => {
+  const jobs = rows($("jobs").value).map(([a, b]) => ({start: Number(a), end: Number(b)})).filter(j => !isNaN(j.start) && !isNaN(j.end) && j.end > j.start);
+  if (!jobs.length){ $("o3").innerHTML = '<span class="err">Enter tasks in the format: start, end (end must be after start).</span>'; return; }
+  const picked = schedule(jobs), max = Math.max(...jobs.map(j => j.end));
+  const bars = jobs.map(j => {
+    const p = picked.includes(j);
+    return `<div class="bar"><i class="${p ? "pick" : ""}" style="left:${j.start / max * 100}%;width:${Math.max((j.end - j.start) / max * 100, 6)}%">${j.start}-${j.end}</i></div>`;
+  }).join("");
+  $("o3").innerHTML = `Maximum tasks scheduled <div class="big">${picked.length}</div>Chosen: ${picked.map(j => `${j.start}-${j.end}`).join(", ")}<div style="margin-top:10px">${bars}</div>`;
+};
+
+drawMap(fillSelects(), null);
+</script>
+</body>
+</html>
